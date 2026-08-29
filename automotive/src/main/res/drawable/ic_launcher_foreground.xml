@@ -1,0 +1,84 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+
+    <!-- Rim gauge: rainbow arc riding just inside the circular safe zone -->
+    <path
+        android:pathData="M 30.47,79.91 A 35,35 0 1 1 77.53,79.91"
+        android:strokeWidth="7"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor" xmlns:aapt="http://schemas.android.com/aapt">
+            <gradient
+                android:type="linear"
+                android:startX="20.5" android:startY="56"
+                android:endX="87.5" android:endY="56">
+                <item android:offset="0.0" android:color="#FFE05252"/>
+                <item android:offset="0.2" android:color="#FFE0A04C"/>
+                <item android:offset="0.4" android:color="#FFD8C26E"/>
+                <item android:offset="0.6" android:color="#FF5AA88F"/>
+                <item android:offset="0.8" android:color="#FF7FB3D8"/>
+                <item android:offset="1.0" android:color="#FF9B7FD8"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Outer bleed extension: lives beyond every mask, carries the fade -->
+    <path
+        android:pathData="M 23.07,88.05 A 46,46 0 1 1 84.93,88.05"
+        android:strokeWidth="16"
+        android:strokeLineCap="butt">
+        <aapt:attr name="android:strokeColor" xmlns:aapt="http://schemas.android.com/aapt">
+            <gradient
+                android:type="linear"
+                android:startX="20.5" android:startY="56"
+                android:endX="87.5" android:endY="56">
+                <item android:offset="0.0" android:color="#FFE05252"/>
+                <item android:offset="0.2" android:color="#FFE0A04C"/>
+                <item android:offset="0.4" android:color="#FFD8C26E"/>
+                <item android:offset="0.6" android:color="#FF5AA88F"/>
+                <item android:offset="0.8" android:color="#FF7FB3D8"/>
+                <item android:offset="1.0" android:color="#FF9B7FD8"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- House inside the gauge -->
+    <path
+        android:pathData="M 54.0,35.5 L 75.3,47.5 L 70.9,47.5 L 70.9,72.5 L 37.1,72.5 L 37.1,47.5 L 32.7,47.5 Z"
+        android:strokeWidth="2.75"
+        android:strokeLineJoin="round"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000">
+        <aapt:attr name="android:strokeColor" xmlns:aapt="http://schemas.android.com/aapt">
+            <gradient
+                android:type="linear"
+                android:startX="54" android:startY="36"
+                android:endX="54" android:endY="70">
+                <item android:offset="0.0" android:color="#FFFFFFFF"/>
+                <item android:offset="1.0" android:color="#FF9FBFD8"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Needle -->
+    <path android:pathData="M 54,60.5 L 66.0,48.5"
+        android:strokeColor="#FFE8EDF2" android:strokeWidth="2.75" android:strokeLineCap="round"/>
+    <path android:pathData="M 54,60.5 m -2.6,0 a 2.6,2.6 0 1 1 5.2,0 a 2.6,2.6 0 1 1 -5.2,0"
+        android:fillColor="#FFE8EDF2"/>
+
+    <path
+        android:pathData="M 0,0 L 108,0 L 108,108 L 0,108 Z"
+        android:strokeWidth="0">
+        <aapt:attr name="android:fillColor" xmlns:aapt="http://schemas.android.com/aapt">
+            <gradient
+                android:type="radial"
+                android:centerX="54" android:centerY="54"
+                android:gradientRadius="54">
+                <item android:offset="0.0" android:color="#0016222C"/>
+                <item android:offset="0.88" android:color="#0016222C"/>
+                <item android:offset="0.98" android:color="#FF16222C"/>
+                <item android:offset="1.0" android:color="#FF16222C"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>
