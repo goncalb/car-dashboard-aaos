@@ -6,7 +6,7 @@ A native Android Automotive OS app built with Google's [Android for Cars App Lib
 (templates, distraction-optimized, usable while driving). It talks to its companion Homey app over your Homey's
 cloud API using per-car pairing tokens.
 
-> **Companion app (required):** [Car Dashboard for Homey Pro]([HOMEY_REPO_URL]) — the Homey Pro app that
+> **Companion app (required):** [Car Dashboard for Homey Pro]([https://github.com/goncalb/com.barradas.cardashboard]) — the Homey Pro app that
 > exposes the whitelists, state and actions this client consumes.
 
 |                |                                                     |
@@ -64,7 +64,7 @@ token in local app storage and nothing else.
 Android Studio (Ladybug or newer), JDK 17.
 
 ```
-git clone [CAR_REPO_URL]
+git clone [https://github.com/goncalb/car-dashboard-aaos]
 cd car-dashboard
 ./gradlew :automotive:assembleDebug        # emulator/dev
 ./gradlew :automotive:bundleRelease        # Play upload
@@ -103,4 +103,4 @@ under the same license. Same license as the related Android Automotive projects.
 
 ## Author
 
-Gonçalo Barradas — [CONTACT_PLACEHOLDER]
+Gonçalo Barradas
