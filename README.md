@@ -15,7 +15,7 @@ cloud API using per-car pairing tokens.
 | Homey App Store (companion) | [HOMEY_APP_STORE_URL]                  |
 | Community topic | [COMMUNITY_TOPIC_URL]                              |
 
-![Home grid]([IMG] docs/home-grid.png)
+![Home grid](docs/home-grid.png)
 
 ## What it does
 
@@ -31,7 +31,7 @@ presets (100 / 0 / 75 / 50 / 25 — extremes first so both are reachable while d
 Energy: consumption, solar yield and how much of it you used at home, battery in/out, grid
 import/export, EV charging. Self-sufficiency computed for you.
 
-![Energy screen]([IMG] docs/energy.png)
+![Energy screen](docs/energy.png)
 
 **Geofencing** — the headline feature. The car keeps a geofence around your home (coordinates come
 from your Homey's own location). Drive away with the garage or a gate still open and a notification
