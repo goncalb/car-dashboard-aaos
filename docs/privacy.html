@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Car Dashboard — Privacy Policy</title>
+<style>body{font:16px/1.55 -apple-system,Segoe UI,Roboto,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#1d232b}h1,h2{line-height:1.25}code{background:#f2f4f7;padding:1px 5px;border-radius:4px}</style>
+</head><body>
+<h1>Car Dashboard — Privacy Policy</h1>
+<p><em>Last updated: 1 September 2026</em></p>
+<p>Car Dashboard is an Android Automotive OS app (package <code>com.barradas.cardashboard</code>) that shows and controls devices from your own Homey Pro smart-home hub on your car's screen. It is developed by Gonçalo Barradas and published as open source under the GNU GPL v3.0.</p>
+
+<h2>The short version</h2>
+<p>The app talks only to <strong>your own Homey</strong> through Athom's cloud API. There is no developer server, no analytics, no advertising and no third-party SDKs. Location is used on the car for geofencing; the only location that ever leaves the car is a city-level name shown to you in your own Homey's settings.</p>
+
+<h2>What the app stores on the car</h2>
+<ul>
+<li>Your Homey ID and a <strong>per-car pairing token</strong> issued by the companion app (in the app's private storage).</li>
+<li>Home coordinates supplied by your Homey, used to register the geofence.</li>
+<li>Cached device state for display.</li>
+</ul>
+<p>Uninstalling the app or revoking the car in the companion app removes this data. The token is scoped to the devices you whitelisted in Homey and can be revoked there at any time.</p>
+
+<h2>What the app sends, and to whom</h2>
+<ul>
+<li><strong>To your Homey</strong> (via <code>api.athom.com</code>, HTTPS): the pairing token, state requests, the actions you trigger (e.g. "close garage"), and — for the fleet view in the companion's settings — the car's model, Android version, app version, network type and a <strong>city-level location name</strong> derived on the car. No coordinates are sent.</li>
+<li><strong>To no one else.</strong> Athom processes the traffic as your Homey's cloud provider under <a href="https://legal.athom.com/?document=privacy-policy">Athom's privacy policy</a>; the developer receives nothing.</li>
+</ul>
+
+<h2>Location</h2>
+<p>With your permission ("Allow all the time"), the app registers a geofence around your home so it can notify you in the car when you leave with the garage or a gate open, offer to open them when you arrive, and — if you enabled it — close them automatically on departure. This works in the background, including when the app is closed or not in use. Precise location is used only on the car to evaluate the geofence; it is never transmitted or stored beyond the current session. You can decline or revoke location permission at any time in the car's Settings → Apps; the rest of the app works without it.</p>
+
+<h2>Notifications</h2>
+<p>Notifications are used solely for the arrival/departure alerts and the receipts of actions you triggered from them.</p>
+
+<h2>Children</h2>
+<p>The app is not directed at children and collects no information from them.</p>
+
+<h2>Changes and contact</h2>
+<p>Changes to this policy are published on this page and in the app's changelog. Questions: open an issue at <a href="https://github.com/goncalb/car-dashboard-aaos/issues">github.com/goncalb/car-dashboard-aaos</a> or post in the <a href="https://community.homey.app/t/158804">Homey community topic</a>.</p>
+</body></html>
