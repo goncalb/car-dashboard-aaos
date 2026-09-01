@@ -1,106 +1,154 @@
-# Car Dashboard for Android Automotive OS
+# Car Dashboard — Android Automotive OS app
 
-Control your [Homey](https://homey.app) smart home from your car's own screen — and let the car take part in it.
+![Car Dashboard](docs/banner.png)
 
-A native Android Automotive OS app built with Google's [Android for Cars App Library](https://developer.android.com/training/cars/apps)
-(templates, distraction-optimized, usable while driving). It talks to its companion Homey app over your Homey's
-cloud API using per-car pairing tokens.
+🇬🇧 English *(the car follows the vehicle's language once string
+resources land — see the roadmap)*
 
-> **Companion app (required):** [Car Dashboard for Homey Pro]([https://github.com/goncalb/com.barradas.cardashboard]) — the Homey Pro app that
-> exposes the whitelists, state and actions this client consumes.
+Your [Homey](https://homey.app) smart home on the car's own screen — and
+the car as a participant in it. A native Android Automotive OS app built
+on Google's [Android for Cars App Library](https://developer.android.com/training/cars/apps):
+templates only, distraction-optimized, usable while driving. Tested daily
+on a Volvo; runs on any car with Google built-in (Volvo, Polestar,
+Renault, GM, Honda, Ford lines and others).
 
-|                |                                                     |
-|----------------|-----------------------------------------------------|
-| Google Play    | [PLAY_STORE_URL] *(internal testing — PM your Gmail on the community topic)* |
-| Homey App Store (companion) | [HOMEY_APP_STORE_URL]                  |
-| Community topic | [COMMUNITY_TOPIC_URL]                              |
+**Requires the companion app on your Homey Pro:**
+[com.barradas.cardashboard](https://github.com/goncalb/com.barradas.cardashboard),
+live on the [Homey App Store](https://homey.app/a/com.barradas.cardashboard).
+The car app is on Google Play, currently internal testing — post your
+Gmail on the
+[community topic](https://community.homey.app/t/app-pro-car-dashboard-for-android-automotive-volvo-polestar-renault/158804)
+to be added.
 
-![Home grid](docs/home-grid.png)
+**No account in the vehicle.** Pairing happens once with a short-lived
+code from the companion's settings; the car receives a per-car, revocable
+token that can only ever see the devices you whitelisted. The car stores
+that token and nothing else. No analytics, no third-party SDKs, no
+foreground services.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ## What it does
 
-**Home grid** — big one-tap tiles for the things you actually use from the driver's seat: garage door,
-gates, locks, blinds, window sensors, temperature, and a live energy tile. State on the badge
-(green = settled, amber = wants attention), your label underneath.
+![Home grid](docs/home-grid.png)
 
-**Categories** — Lights grouped by room (whole-room or per-light), Scenes (your chosen Homey Flows as
-buttons), Blinds / Locks / Sensors lists, and a level screen for dimmers and blinds with steppers and
-presets (100 / 0 / 75 / 50 / 25 — extremes first so both are reachable while driving).
+- **Home grid** — big one-tap tiles: garage door, gates, locks, blinds,
+  window sensors, temperature, live energy. State on the badge (green =
+  settled, amber = wants attention), your label beneath
+- **Lights** by room — whole room or single light; dimmers get a level
+  screen with steppers and presets
+- **Scenes** — the Flows you picked, as buttons
+- **Blinds / Locks / Sensors** — lists with state, level screen for
+  blinds (100 / 0 / 75 / 50 / 25, extremes first so both are reachable
+  while driving)
+- **Energy** — live flows (home, solar, battery, grid, EV charger) and
+  Homey Energy's daily totals with self-sufficiency computed
 
-**Energy** — live flows (home load, solar, battery, grid, EV charger) and daily totals from Homey
-Energy: consumption, solar yield and how much of it you used at home, battery in/out, grid
-import/export, EV charging. Self-sufficiency computed for you.
+![Energy](docs/energy.png)
 
-![Energy screen](docs/energy.png)
+## Geofencing — the car takes part
 
-**Geofencing** — the headline feature. The car keeps a geofence around your home (coordinates come
-from your Homey's own location). Drive away with the garage or a gate still open and a notification
-with a **Close** button appears in the car; arrive and you get **Open** buttons. With several barriers
-it is one notification with a button per pending action plus **Both/All**. Each tile can instead be
-set to close/lock itself on departure — always with a receipt notification. All of it works headless:
-the app does not need to be open, and it survives reboots and Play Store updates.
+![Notifications](docs/notifications.png)
 
-**While driving** — the car host limits list length while moving. Every list therefore starts with a
-permanent summary row ("12 lights · 3 on") that switches to "Full list when parked" when the cut is
-active. Nothing reshapes, so the app never trips the host's task-step limits.
+The car keeps a geofence around your home (coordinates come from the
+Homey's own location). Everything below runs **headless** — the app does
+not need to be open — and survives reboots and Play Store updates.
+
+| Crossing | What happens |
+|---|---|
+| Departure, a garage or gate still open | One notification, "You left home", a button per pending action (*Close garage*, *Close gate*) plus **Both/All** when there are several; anything already closed is mentioned, not buttoned |
+| Departure, tile set to *Close automatically* | The barrier closes itself and the same notification carries the receipt ("Garage closed automatically ✓") |
+| Arrival, barriers closed | "Near home" with *Open* buttons — opening is never automatic |
+| 20 minutes unactioned | Buttons expire (the notification times out) |
+
+Which tiles take part, and whether departure notifies or acts, is a
+per-tile choice in the companion's settings.
+
+## While driving
+
+The car host limits what an app may show while moving (on Volvo,
+roughly the first six rows of a list). Every list therefore opens with a
+permanent summary row — "12 lights · 3 on" when parked — that reads
+"Full list when parked" while the cut is active. Nothing reshapes while
+driving: changing a list's structure counts as a *task step* and five
+of them pause the whole app, a lesson learned on the road. Pushed
+screens open in the host's loading state so they fill in while moving.
 
 ## Security model
 
-No account login in the vehicle. Pairing happens once, with a short-lived code generated in the
-companion app's settings; the car receives a **per-car, revocable token** that can only ever see the
-devices you whitelisted. Tokens are managed (renamed, revoked) from the Homey side; the car stores its
-token in local app storage and nothing else.
-
-## Requirements
-
-- A car running Android Automotive OS **with the Google Play Store** (Volvo, Polestar, Renault, GM,
-  Honda, Ford lines, and others), Car App API level 1+.
-- A Homey Pro running the companion app, reachable via Athom's cloud.
-- Location permission "Allow all the time" if you want the geofence features (optional — everything
-  else works without it).
+| | |
+|---|---|
+| Pairing | Homey ID + one-time code from the companion (5-minute TTL, single use, lockout after repeated failures) |
+| Token | Per car, revocable from Homey, scoped to the whitelist |
+| Transport | HTTPS to Athom's cloud API; cleartext explicitly banned in the network security config |
+| Actions | Token in the request **body**, never in URLs |
+| Location | Only for the geofence; never sent anywhere; optional — everything else works without it |
 
 ## Building from source
 
 Android Studio (Ladybug or newer), JDK 17.
 
 ```
-git clone [https://github.com/goncalb/car-dashboard-aaos]
-cd car-dashboard
-./gradlew :automotive:assembleDebug        # emulator/dev
-./gradlew :automotive:bundleRelease        # Play upload
+git clone https://github.com/goncalb/car-dashboard-aaos
+cd car-dashboard-aaos
+./gradlew :automotive:assembleDebug        # emulator / dev
+./gradlew :automotive:bundleRelease        # Play upload (.aab)
 ```
 
-The AAOS emulator: SDK Manager → Automotive system images; run the `automotive` configuration.
-On a real car the app must come through the Play Store (internal testing is enough) — retail AAOS
-vehicles do not sideload.
+Emulator: SDK Manager → Automotive system images (with Play Store), run
+the `automotive` configuration. Real cars install only through the Play
+Store — retail AAOS vehicles do not sideload — and template apps need
+Google's Automotive App Host, which comes with Google built-in.
 
-## Pairing
+`minCarApiLevel` is deliberately 1 with a runtime check: declaring a
+higher level crashes instantly on older hosts.
 
-1. Install the companion app on your Homey, open its settings, whitelist devices, create a pairing code.
-2. In the car: enter your Homey ID and the code. Done — the token is issued and the code dies.
+## Branding & assets
 
-## Architecture in one paragraph
+- Launcher icon: `res/drawable` adaptive icon — full-bleed rainbow arc
+  with a house, tuned on the Volvo app grid and dock
+- Tile and row icons: a single hand-drawn hairline set (`res/drawable/ic_*.xml`)
+- Badge colours: green settled, amber attention, neutral grey (`Badges.kt`)
+- Play assets and README images: `docs/`
 
-Kotlin, single `CarAppService` with a `TabTemplate` session (Home grid, Lights, Scenes, Info) and
-pushed screens for categories, energy and levels. Poll-based state (10 s while visible) against the
-companion's `/state`; actions via `/action` with the token in the request body. Geofencing via
-`GeofencingClient` with a manifest-registered receiver; notifications use `CarAppExtender` and act
-through a broadcast receiver without opening the app. No foreground services, no accounts, no
-analytics, no third-party SDKs.
+## Project structure
+
+```text
+automotive/src/main/java/com/example/homeycar/
+  CarApp.kt               CarAppService, TabTemplate session, all screens
+  HomeyClient.kt          /state and /action client, models, blind/lock state rules
+  Badges.kt               Badge bitmaps (icon + colour) for grid and rows
+  Geofencing.kt           Geofence registration + receiver: notifications, auto-close
+  NotifActionReceiver.kt  Headless Close/Open/Both from notification buttons
+  BootReceiver.kt         Re-registers the geofence after boot and app update
+  FenceWorker.kt          Deferred (re)registration
+  Config.kt               Constants
+automotive/src/main/res/
+  drawable/               22 hairline icons + launcher icon layers
+  xml/                    automotive_app_desc, network security config
+AndroidManifest.xml       Permissions, CarAppService (IOT), receivers
+CHANGELOG.md              Version history
+```
+
+## Roadmap
+
+- Theme accent colour for section headers and the tab indicator.
+- **Translations** — hard-coded strings move to `res/values/strings.xml`
+  with `values-nl/-de/-it/-pt`; the host then follows the vehicle's
+  language automatically. In step with the companion's `locales/`.
+- A native (non-template) flavour for Android cars without Google
+  services (BYD, smart, aftermarket units).
+- Configurable arrival/departure actions (run a chosen Flow).
 
 ## Related projects
 
-[Android Automotive by Simone Di Maio](https://homey.app/a/com.dimapp.aaos) pioneered the
-Homey-on-AAOS idea with an OAuth relay and generic device rendering
-([car app](https://github.com/s-dimaio/HomeyAutomotive) ·
-[Homey app](https://github.com/s-dimaio/com.dimapp.aaos)). The two projects exchange ideas —
-the Gate tile and the virtual-class handling in this app came out of that conversation.
+[Android Automotive by Simone Di Maio](https://homey.app/a/com.dimapp.aaos)
+([car](https://github.com/s-dimaio/HomeyAutomotive) ·
+[Homey](https://github.com/s-dimaio/com.dimapp.aaos)) — the other
+Homey ↔ AAOS bridge, with an OAuth relay and generic rendering. Both
+GPL-3.0; ideas flow both ways.
 
 ## License
 
-[GNU GPL v3.0](LICENSE) — free to use, study, modify and share; derivatives must stay open
-under the same license. Same license as the related Android Automotive projects.
-
-## Author
-
-Gonçalo Barradas
+[GNU GPL v3.0](LICENSE) — free to use, study, modify and share;
+derivatives stay open under the same license.
