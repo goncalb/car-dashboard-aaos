@@ -197,7 +197,9 @@ class DashboardSession : Session() {
         }
         val prefs = carContext.getSharedPreferences("homey", 0)
         HomeyClient.token = prefs.getString("token", "") ?: ""
-        prefs.getString("baseUrl", "")?.takeIf { it.isNotEmpty() }?.let { HomeyClient.baseUrl = it }
+        prefs.getString("baseUrl", "")?.takeIf { it.isNotEmpty() }?.let {
+            if (it == "demo") HomeyClient.demo = true else HomeyClient.baseUrl = it
+        }
         return HomeScreen(carContext)
     }
 }
@@ -277,6 +279,12 @@ class SetupScreen(carContext: CarContext) : Screen(carContext) {
             .replace(".connect.athom.com", "")
             .filter { it.isLetterOrDigit() }
         if (id.length != 24) {
+            if (id.equals(DemoHome.HOMEY_ID, ignoreCase = true)) {
+                carContext.getSharedPreferences("homey", 0).edit()
+                    .putString("baseUrl", "demo").commit()
+                screenManager.push(PairScreen(carContext))
+                return
+            }
             message = "That doesn't look like a Homey ID (24 letters/digits). It's shown in the Homey app → Car Dashboard settings, Step 1."
             invalidate(); return
         }
@@ -302,14 +310,18 @@ class SetupScreen(carContext: CarContext) : Screen(carContext) {
 
 class PairScreen(carContext: CarContext) : Screen(carContext) {
 
-    private var message = "Open the Homey app → Car Dashboard settings → Generate pairing code, then enter it here."
+    private val isDemo: Boolean
+        get() = carContext.getSharedPreferences("homey", 0).getString("baseUrl", "") == "demo"
+    private var message = ""
     private var busy = false
 
     override fun onGetTemplate(): Template {
+        if (message.isEmpty()) message = if (isDemo) "Demo home: enter the demo code."
+            else "Open the Homey app → Car Dashboard settings → Generate pairing code, then enter it here."
         val input = InputSignInMethod.Builder(object : androidx.car.app.model.InputCallback {
             override fun onInputSubmitted(text: String) { submit(text.trim().uppercase()) }
         })
-            .setHint("6-character code")
+            .setHint(if (isDemo) "Demo code" else "6-character code")
             .build()
 
         return SignInTemplate.Builder(input)
@@ -322,6 +334,23 @@ class PairScreen(carContext: CarContext) : Screen(carContext) {
 
     private fun submit(raw: String) {
         val code = raw.trim().uppercase()
+        val prefs0 = carContext.getSharedPreferences("homey", 0)
+        if (prefs0.getString("baseUrl", "") == "demo") {
+            if (code == DemoHome.CODE) {
+                HomeyClient.demo = true
+                DemoHome.reset()
+                prefs0.edit().putString("token", "demo")
+                    .putLong("pairedAt", System.currentTimeMillis())
+                    .putString("tokenTail", "demo").commit()
+                CarToast.makeText(carContext, "Demo home ✓", CarToast.LENGTH_SHORT).show()
+                HomeScreen.resetToHome = true
+                screenManager.popToRoot()
+            } else {
+                message = "Demo code incorrect."
+                invalidate()
+            }
+            return
+        }
         busy = true; invalidate()
         lifecycleScope.launch {
             val token = try { HomeyClient.pair(code, "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}".trim().ifEmpty { "Car" }, carMeta(carContext)) } catch (e: Exception) { null }
@@ -333,6 +362,7 @@ class PairScreen(carContext: CarContext) : Screen(carContext) {
                     .putString("tokenTail", token.takeLast(4))
                     .commit()
                 CarToast.makeText(carContext, "Paired ✓", CarToast.LENGTH_SHORT).show()
+                HomeScreen.resetToHome = true
                 screenManager.popToRoot()
             } else {
                 message = "Code rejected or expired — generate a fresh one in Homey settings and try again."
@@ -345,6 +375,8 @@ class PairScreen(carContext: CarContext) : Screen(carContext) {
 private var lastMetaAt = 0L
 
 class HomeScreen(carContext: CarContext) : Screen(carContext) {
+
+    companion object { @JvmStatic @Volatile var resetToHome = false }
 
     private var snapshot: HomeyClient.Snapshot? = null
     private var error: String? = null
@@ -524,7 +556,7 @@ class HomeScreen(carContext: CarContext) : Screen(carContext) {
                     CarToast.makeText(carContext, "Opening garage…", CarToast.LENGTH_SHORT).show()
                     runAction(garage.tileId, "open")
                 } else screenManager.push(
-                    ConfirmScreen(carContext, "You're away from home — open the garage door?",
+                    ConfirmScreen(carContext, if (HomeyClient.demo) "Open the garage door?" else "You're away from home — open the garage door?",
                         onConfirm = { runAction(garage.tileId, "open") })
                 )
             }
@@ -559,7 +591,10 @@ class HomeScreen(carContext: CarContext) : Screen(carContext) {
                 activeTab == "home" -> GridTemplate.Builder().setLoading(true).build()
                 else -> ListTemplate.Builder().setLoading(true).build()
             }
-        } else when (activeTab) {
+        } else when (run {
+            if (resetToHome) { resetToHome = false; activeTab = "home" }
+            activeTab
+        }) {
             "lights" -> buildLightsTab(snap)
             "scenes" -> buildScenesTab(snap)
             "info" -> buildInfoTab(snap)
@@ -728,7 +763,8 @@ class HomeScreen(carContext: CarContext) : Screen(carContext) {
         val tpl = ListTemplate.Builder()
         val sections = Sections("\u2002INFO")
         val status = sections.section("\u2002STATUS")
-        listOf(info("Homey", if (homeyId.length > 12)
+        listOf(info("Homey", if (HomeyClient.demo) "Demo home — not connected"
+                else if (homeyId.length > 12)
                     homeyId.take(6) + "…" + homeyId.takeLast(6) else homeyId),
             info("Companion app",
                     snap.meta?.let { "v${it.appVersion} · Homey ${it.homeyVersion}" } ?: "—"),
@@ -815,7 +851,7 @@ class HomeScreen(carContext: CarContext) : Screen(carContext) {
                         runAction(tile.tileId, "open")
                     }
                     else -> screenManager.push(
-                        ConfirmScreen(carContext, "You're away from home — open the garage door?",
+                        ConfirmScreen(carContext, if (HomeyClient.demo) "Open the garage door?" else "You're away from home — open the garage door?",
                             onConfirm = { runAction(tile.tileId, "open") })
                     )
                 }
@@ -825,8 +861,6 @@ class HomeScreen(carContext: CarContext) : Screen(carContext) {
             "lock" ->
                 if (tile.devices.size > 1)
                     screenManager.push(DeviceListScreen(carContext, tile.tileId, tile.label, tile.type))
-                else if (tile.instant)
-                    runAction(tile.tileId, if (tile.summary == "LOCKED") "unlock" else "lock")
                 else screenManager.push(
                     ConfirmScreen(carContext, if (tile.summary == "LOCKED") "Unlock the door?" else "Lock the door?",
                         onConfirm = { runAction(tile.tileId, if (tile.summary == "LOCKED") "unlock" else "lock") })

@@ -5,6 +5,19 @@ numbering where they ship together; the Play versionCode is in
 parentheses. Companion changes:
 [com.barradas.cardashboard/CHANGELOG.md](https://github.com/goncalb/com.barradas.cardashboard/blob/main/CHANGELOG.md).
 
+## 1.4.16 (26) (2026-09-02) — A demo home, and a quieter background
+
+- Built-in demo home for Play review and the curious: Homey ID "demo"
+  plus the demo code activates a fully local simulated house — tiles,
+  dimmable lights, scenes that visibly act, energy. No network, no hub.
+- Fixed a crash when a geofence event arrived with nothing to act on
+  (double broadcast-finish); it could kill the app silently in the
+  background since 1.4.14.
+- Theme accent colour (sky) for section headers and the tab indicator,
+  where the host honours it.
+- After pairing, the app opens on the Home grid.
+- Targets Android 15 (API 35), per Play's 2026 requirement.
+
 ## 1.4.14 (24) (2026-08-30) — Gates, and the car that closes the door behind you
 
 - New **Gate** tile on the Home grid: one-tap control of driveway and

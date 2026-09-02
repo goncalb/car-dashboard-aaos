@@ -34,6 +34,7 @@ class SetupRequiredException : Exception("No Homey configured")
 object HomeyClient {
 
     @Volatile var token: String = ""
+    @Volatile var demo: Boolean = false
 
     @Volatile var baseUrl: String = Config.BASE_URL
     fun setHomeyId(id: String) { baseUrl = "https://$id.connect.athom.com" }
@@ -83,7 +84,6 @@ object HomeyClient {
         val footer: String?,
         val columns: List<EnergyColumn>,
         val today: List<TodayRow>,
-        val instant: Boolean,
         val hasDetail: Boolean,
         val devices: List<DeviceState>,
     )
@@ -101,6 +101,7 @@ object HomeyClient {
     )
 
     suspend fun fetchState(): Snapshot = withContext(Dispatchers.IO) {
+        if (demo) return@withContext DemoHome.snapshot()
         val obj = JSONObject(get("$APP_PATH/state"))
         Snapshot(
             timestamp = obj.optString("timestamp"),
@@ -116,21 +117,25 @@ object HomeyClient {
     }
 
     suspend fun sendAction(tileId: String, action: String): Boolean = withContext(Dispatchers.IO) {
+        if (demo) return@withContext DemoHome.action(tileId, action, null, null)
         post("$APP_PATH/action", JSONObject().put("tileId", tileId).put("action", action))
     }
 
     suspend fun sendDeviceAction(tileId: String, action: String, deviceId: String): Boolean =
         withContext(Dispatchers.IO) {
+            if (demo) return@withContext DemoHome.action(tileId, action, deviceId, null)
             post("$APP_PATH/action",
                 JSONObject().put("tileId", tileId).put("action", action).put("deviceId", deviceId))
         }
 
     suspend fun postCarMeta(meta: Map<String, String>): Boolean = withContext(Dispatchers.IO) {
+        if (demo) return@withContext true
         post("$APP_PATH/car-meta", JSONObject().put("meta", carMetaJson(meta)))
     }
 
     suspend fun setLevel(tileId: String, deviceId: String, level: Double): Boolean =
         withContext(Dispatchers.IO) {
+            if (demo) return@withContext DemoHome.action(tileId, "setLevel", deviceId, level)
             post("$APP_PATH/action",
                 JSONObject().put("tileId", tileId).put("action", "setLevel")
                     .put("deviceId", deviceId).put("level", level))
@@ -157,10 +162,12 @@ object HomeyClient {
     }
 
     suspend fun unpair(): Boolean = withContext(Dispatchers.IO) {
+        if (demo) { demo = false; DemoHome.reset(); return@withContext true }
         try { post("$APP_PATH/unpair", JSONObject()) } catch (e: Exception) { false }
     }
 
     suspend fun runScene(flowId: String): Boolean = withContext(Dispatchers.IO) {
+        if (demo) return@withContext DemoHome.runScene(flowId)
         post("$APP_PATH/action", JSONObject().put("sceneId", flowId))
     }
 
@@ -226,7 +233,6 @@ object HomeyClient {
                         TodayRow(r.getString("key"), r.optString("value", "—"), r.optString("text", ""), r.optString("tone", "neutral"))
                     }
                 } ?: emptyList(),
-                instant = t.optBoolean("instant", false),
                 hasDetail = t.optBoolean("hasDetail", false),
                 devices = t.optJSONArray("devices")?.let { arr ->
                     (0 until arr.length()).map { j ->

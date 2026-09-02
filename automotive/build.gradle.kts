@@ -7,14 +7,14 @@ plugins {
 
 android {
     namespace = "com.example.homeycar"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.barradas.cardashboard"
         minSdk = 29
-        targetSdk = 34
-        versionCode = 24
-        versionName = "1.4.14"
+        targetSdk = 35
+        versionCode = 26
+        versionName = "1.4.16"
     }
 
     signingConfigs {

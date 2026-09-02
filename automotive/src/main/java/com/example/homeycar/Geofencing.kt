@@ -128,7 +128,7 @@ class GeofenceReceiver : BroadcastReceiver() {
                     NotificationChannelCompat.Builder("proximity", NotificationManagerCompat.IMPORTANCE_HIGH)
                         .setName("Garage alerts").build()
                 )
-                if (items.isEmpty()) { pending.finish(); return@Thread }
+                if (items.isEmpty()) return@Thread
                 if (entering) {
                     nm.cancel(1002)
                     val closed = items.filter { it.closed == true }
@@ -142,7 +142,7 @@ class GeofenceReceiver : BroadcastReceiver() {
                 } else {
                     nm.cancel(1001)
                     val open = items.filter { it.closed == false }
-                    if (open.isEmpty()) { pending.finish(); return@Thread }
+                    if (open.isEmpty()) return@Thread
                     val auto = open.filter { it.auto }
                     val ask = open.filter { !it.auto }
                     val done = ArrayList<String>()
