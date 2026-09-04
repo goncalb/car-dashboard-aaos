@@ -206,7 +206,7 @@ class DashboardSession : Session() {
 
 class PermissionScreen(carContext: CarContext) : Screen(carContext) {
 
-    private var message = "Location enables the near-home garage shortcut and arrival/departure alerts — even with the app closed (geofencing). Notifications deliver those alerts. All optional; the dashboard works without them."
+    private var message = "Car Dashboard collects location data to enable arrival and departure alerts and the near-home garage shortcut, even when the app is closed or not in use. Notifications deliver those alerts. All optional; the dashboard works without them."
     private var step = 0
 
     override fun onGetTemplate(): Template =
@@ -256,7 +256,7 @@ class PermissionScreen(carContext: CarContext) : Screen(carContext) {
 
 class SetupScreen(carContext: CarContext) : Screen(carContext) {
 
-    private var message = "One-time setup: open the Homey app → Car Dashboard settings → Generate pairing code. Enter the Homey ID shown there (Step 1)."
+    private var message = "See Homey app → Car Dashboard, Step 1"
     private var busy = false
 
     override fun onGetTemplate(): Template {
@@ -285,7 +285,7 @@ class SetupScreen(carContext: CarContext) : Screen(carContext) {
                 screenManager.push(PairScreen(carContext))
                 return
             }
-            message = "That doesn't look like a Homey ID (24 letters/digits). It's shown in the Homey app → Car Dashboard settings, Step 1."
+            message = "Not valid — 24 letters/digits (Step 1)"
             invalidate(); return
         }
         busy = true
@@ -376,7 +376,8 @@ private var lastMetaAt = 0L
 
 class HomeScreen(carContext: CarContext) : Screen(carContext) {
 
-    companion object { @JvmStatic @Volatile var resetToHome = false }
+    companion object { @JvmStatic @Volatile var resetToHome = false
+        @JvmStatic @Volatile var timelinePreview: String? = null }
 
     private var snapshot: HomeyClient.Snapshot? = null
     private var error: String? = null
@@ -760,55 +761,51 @@ class HomeScreen(carContext: CarContext) : Screen(carContext) {
         fun info(title: String, value: String) = Row.Builder()
             .setTitle(title).addText(value)
 
+        val notifOk = androidx.core.app.NotificationManagerCompat.from(carContext)
+            .areNotificationsEnabled()
         val tpl = ListTemplate.Builder()
         val sections = Sections("\u2002INFO")
-        val status = sections.section("\u2002STATUS")
-        listOf(info("Homey", if (HomeyClient.demo) "Demo home — not connected"
-                else if (homeyId.length > 12)
-                    homeyId.take(6) + "…" + homeyId.takeLast(6) else homeyId),
-            info("Companion app",
-                    snap.meta?.let { "v${it.appVersion} · Homey ${it.homeyVersion}" } ?: "—"),
-            info("Paired", "$pairedText · key …$tail"),
-            info("App version", "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"),
-            info("Car App API", "${carContext.carAppApiLevel} · grid $gridLimit · list $listLim"),
-            info("Location features", locText),
-            info("Fence events (last 5)", run {
-                    val log = prefs.getString("fenceLog", "") ?: ""
-                    if (log.isBlank()) "none since install"
-                    else log.split("|").joinToString("  ·  ")
-                }),
-            info("Last refresh", run {
-                    val t = if (lastRefreshAt > 0)
-                        java.text.DateFormat.getTimeInstance(java.text.DateFormat.MEDIUM)
-                            .format(java.util.Date(lastRefreshAt)) else "—"
-                    "$t · $lastRefreshResult · server ${snap.timestamp.takeLast(9).removeSuffix("Z")}"
-                }),
-            info("Data", run {
-                    val devs = snap.tiles.sumOf { it.devices.size }
-                    "${snap.tiles.size} tiles · $devs devices · ${snap.scenes.size} scenes"
-                }),
-            info("Memory", run {
-                    val am = carContext.getSystemService(android.app.ActivityManager::class.java)
-                    val mi = android.app.ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
-                    val appMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1_048_576
-                    "App $appMb MB · System " +
-                        String.format("%.1f", mi.availMem / 1_073_741_824.0) + " of " +
-                        String.format("%.1f", mi.totalMem / 1_073_741_824.0) + " GB free"
-                })
-        ).forEach { status.add(it) }
-        val actions = sections.section("\u2002ACTIONS")
-        actions.add(Row.Builder().setTitle("Refresh now").addText("Fetch the latest state")
-            .setOnClickListener { lifecycleScope.launch { refresh() } })
-        actions.add(Row.Builder().setTitle("Permission setup").addText("Location & notifications")
+        val home = sections.section("\u2002HOME")
+        home.add(Row.Builder()
+            .setTitle(if (HomeyClient.demo) "Demo home"
+                else snap.meta?.homeyName?.takeIf { it.isNotBlank() } ?: "My Homey")
+            .addText(if (HomeyClient.demo) "Not connected to a Homey"
+                else listOfNotNull(
+                    snap.meta?.ownerName?.takeIf { it.isNotBlank() },
+                    "online").joinToString(" · "))
+        )
+        home.add(Row.Builder().setTitle("Timeline")
+            .addText(HomeScreen.timelinePreview ?: "What happened at home lately")
+            .setBrowsable(true)
+            .setOnClickListener { screenManager.push(TimelineScreen(carContext)) })
+        val car = sections.section("\u2002THIS CAR")
+        car.add(info("App version", "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})" +
+            (snap.meta?.let { " · companion ${it.appVersion}" } ?: "")))
+        car.add(Row.Builder().setTitle("Location features").addText(locText)
             .setOnClickListener { screenManager.push(PermissionScreen(carContext)) })
-        actions.add(Row.Builder().setTitle("Disconnect this car").addText("Requires re-pairing to undo")
+        car.add(Row.Builder().setTitle("Notifications")
+            .addText(if (notifOk) "Enabled ✓" else "Off — alerts won't appear")
+            .setOnClickListener { screenManager.push(PermissionScreen(carContext)) })
+        car.add(Row.Builder().setTitle("Diagnostics")
+            .addText("Pairing, geofence log, data, memory")
+            .setBrowsable(true)
+            .setOnClickListener {
+                screenManager.push(DiagnosticsScreen(carContext, snap,
+                    lastRefreshAt, lastRefreshResult))
+            })
+        car.add(Row.Builder().setTitle("Refresh now").addText("Fetch the latest state")
+            .setOnClickListener { lifecycleScope.launch { refresh() } })
+        car.add(Row.Builder().setTitle("Disconnect this car")
+            .addText("Asks for confirmation")
+            .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_lock_open))
+                .setTint(androidx.car.app.model.CarColor.RED).build())
             .setOnClickListener {
                 screenManager.push(ConfirmScreen(carContext,
                     "Disconnect this car from your Homey?",
                     onConfirm = { logout() },
                     detail = "You'll need the Homey ID and a new pairing code to reconnect."))
             })
-        sections.applyTo(tpl, carContext, "Diagnostics", "Status and actions")
+        sections.applyTo(tpl, carContext, "Info", "Your home and this car")
         return tpl.build()
     }
 
@@ -996,6 +993,121 @@ class EnergyDetailScreen(
             .setImage(Badges.badge(carContext, icon, color), Row.IMAGE_TYPE_LARGE)
             .setTitle(title)
             .addText(text)
+}
+
+class DiagnosticsScreen(
+    carContext: CarContext,
+    private val snap: HomeyClient.Snapshot,
+    private val lastRefreshAt: Long,
+    private val lastRefreshResult: String,
+) : Screen(carContext) {
+    override fun onGetTemplate(): Template {
+        val prefs = carContext.getSharedPreferences("homey", 0)
+        val homeyId = (prefs.getString("baseUrl", "") ?: "")
+            .removePrefix("https://").substringBefore(".")
+        val pairedAt = prefs.getLong("pairedAt", 0L)
+        val pairedText = if (pairedAt > 0)
+            java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM)
+                .format(java.util.Date(pairedAt)) else "—"
+        val tail = prefs.getString("tokenTail", "") ?: ""
+        val gridLimit = try {
+            carContext.getCarService(androidx.car.app.constraints.ConstraintManager::class.java)
+                .getContentLimit(androidx.car.app.constraints.ConstraintManager.CONTENT_LIMIT_TYPE_GRID)
+                .toString()
+        } catch (e: Exception) { "?" }
+        val listLim = listLimit(carContext).let { if (it == Int.MAX_VALUE) "?" else it.toString() }
+        fun info(t: String, v: String) = Row.Builder().setTitle(t).addText(v)
+        val tpl = ListTemplate.Builder()
+        val sections = Sections("\u2002DIAGNOSTICS")
+        val pairing = sections.section("\u2002PAIRING")
+        pairing.add(info("Homey ID", if (HomeyClient.demo) "demo"
+            else if (homeyId.length > 12) homeyId.take(6) + "…" + homeyId.takeLast(6) else homeyId))
+        pairing.add(info("Paired", "$pairedText · key …$tail"))
+        val geo = sections.section("\u2002GEOFENCE")
+        geo.add(info("Fence events (last 5)", run {
+            val log = prefs.getString("fenceLog", "") ?: ""
+            if (log.isBlank()) "none since install" else log.split("|").joinToString("  ·  ")
+        }))
+        val tech = sections.section("\u2002TECHNICAL")
+        tech.add(info("Companion app",
+            snap.meta?.let { "v${it.appVersion} · Homey ${it.homeyVersion}" } ?: "—"))
+        tech.add(info("Car App API", "${carContext.carAppApiLevel} · grid $gridLimit · list $listLim"))
+        tech.add(info("Last refresh", run {
+            val t = if (lastRefreshAt > 0)
+                java.text.DateFormat.getTimeInstance(java.text.DateFormat.MEDIUM)
+                    .format(java.util.Date(lastRefreshAt)) else "—"
+            "$t · $lastRefreshResult · server ${snap.timestamp.takeLast(9).removeSuffix("Z")}"
+        }))
+        tech.add(info("Data", run {
+            val devs = snap.tiles.sumOf { it.devices.size }
+            "${snap.tiles.size} tiles · $devs devices · ${snap.scenes.size} scenes"
+        }))
+        tech.add(info("Memory", run {
+            val am = carContext.getSystemService(android.app.ActivityManager::class.java)
+            val mi = android.app.ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
+            val appMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1_048_576
+            "App $appMb MB · System " +
+                String.format("%.1f", mi.availMem / 1_073_741_824.0) + " of " +
+                String.format("%.1f", mi.totalMem / 1_073_741_824.0) + " GB free"
+        }))
+        sections.applyTo(tpl, carContext, "Diagnostics", "Read-only")
+        return tpl.setHeaderAction(Action.BACK).build()
+    }
+}
+
+class TimelineScreen(carContext: CarContext) : Screen(carContext) {
+    private var items: List<HomeyClient.TimelineItem>? = null
+    private var failed = false
+
+    init {
+        lifecycleScope.launch {
+            items = try { HomeyClient.fetchTimeline() } catch (e: Exception) { failed = true; emptyList() }
+            items?.firstOrNull()?.let {
+                HomeScreen.timelinePreview = it.text.take(40) + " · " + relTime(it.at)
+            }
+            invalidate()
+        }
+    }
+
+    private fun relTime(at: Long): String {
+        if (at <= 0) return ""
+        val now = System.currentTimeMillis()
+        val mins = (now - at) / 60_000L
+        if (mins < 1) return "now"
+        if (mins < 60) return "$mins min"
+        val cal = java.util.Calendar.getInstance()
+        val today0 = cal.apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val tf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        return when {
+            at >= today0 -> tf.format(java.util.Date(at))
+            at >= today0 - 86_400_000L -> "Yesterday " + tf.format(java.util.Date(at))
+            else -> java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault())
+                .format(java.util.Date(at))
+        }
+    }
+
+    override fun onGetTemplate(): Template {
+        val tpl = ListTemplate.Builder()
+            .setTitle("Timeline")
+            .setHeaderAction(Action.BACK)
+        val list = items ?: return tpl.setLoading(true).build()
+        val lead = Row.Builder()
+            .setTitle(if (failed) "Timeline unavailable"
+                else "${list.size} events · newest first")
+            .addText(if (failed) "Try again from Info"
+                else list.firstOrNull()?.let { "Latest " + relTime(it.at) + " ago" } ?: "Nothing yet")
+        val il = ItemList.Builder().addItem(lead.build())
+        list.forEach { n ->
+            il.addItem(Row.Builder()
+                .setTitle(n.text.ifBlank { "—" })
+                .addText(relTime(n.at))
+                .build())
+        }
+        return tpl.setSingleList(il.build()).build()
+    }
 }
 
 class DeviceListScreen(

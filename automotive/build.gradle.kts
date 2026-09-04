@@ -13,8 +13,8 @@ android {
         applicationId = "com.barradas.cardashboard"
         minSdk = 29
         targetSdk = 35
-        versionCode = 26
-        versionName = "1.4.16"
+        versionCode = 29
+        versionName = "1.4.18"
     }
 
     signingConfigs {

@@ -90,7 +90,10 @@ object HomeyClient {
 
     data class Scene(val flowId: String, val label: String)
 
-    data class Meta(val appVersion: String, val homeyVersion: String)
+    data class Meta(val appVersion: String, val homeyVersion: String,
+        val homeyName: String, val ownerName: String)
+
+    data class TimelineItem(val text: String, val at: Long)
 
     data class Snapshot(
         val timestamp: String,
@@ -111,7 +114,8 @@ object HomeyClient {
                 HomeLocation(it.optDouble("lat"), it.optDouble("lng"))
             },
             meta = obj.optJSONObject("meta")?.let {
-                Meta(it.optString("appVersion", ""), it.optString("homeyVersion", ""))
+                Meta(it.optString("appVersion", ""), it.optString("homeyVersion", ""),
+                    it.optString("homeyName", ""), it.optString("ownerName", ""))
             },
         )
     }
@@ -127,6 +131,26 @@ object HomeyClient {
             post("$APP_PATH/action",
                 JSONObject().put("tileId", tileId).put("action", action).put("deviceId", deviceId))
         }
+
+    private val isoFmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US)
+        .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+
+    suspend fun fetchTimeline(): List<TimelineItem> = withContext(Dispatchers.IO) {
+        if (demo) return@withContext listOf(
+            TimelineItem("Garage door was closed.", System.currentTimeMillis() - 12 * 60_000L),
+            TimelineItem("Front door has been locked.", System.currentTimeMillis() - 14 * 60_000L),
+            TimelineItem("Leaving home — 6 lights off", System.currentTimeMillis() - 9 * 3_600_000L),
+        )
+        val obj = JSONObject(get("$APP_PATH/timeline"))
+        val arr = obj.optJSONArray("items") ?: return@withContext emptyList()
+        (0 until arr.length()).mapNotNull { i ->
+            val o = arr.optJSONObject(i) ?: return@mapNotNull null
+            val at = try {
+                isoFmt.parse(o.optString("at", "").take(19))?.time ?: 0L
+            } catch (e: Exception) { 0L }
+            TimelineItem(o.optString("text", ""), at)
+        }
+    }
 
     suspend fun postCarMeta(meta: Map<String, String>): Boolean = withContext(Dispatchers.IO) {
         if (demo) return@withContext true

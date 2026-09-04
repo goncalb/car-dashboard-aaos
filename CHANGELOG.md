@@ -5,18 +5,31 @@ numbering where they ship together; the Play versionCode is in
 parentheses. Companion changes:
 [com.barradas.cardashboard/CHANGELOG.md](https://github.com/goncalb/com.barradas.cardashboard/blob/main/CHANGELOG.md).
 
-## 1.4.16 (26) (2026-09-02) — A demo home, and a quieter background
+## 1.4.18 (29) (2026-09-03) — The car knows your home by name
 
-- Built-in demo home for Play review and the curious: Homey ID "demo"
-  plus the demo code activates a fully local simulated house — tiles,
-  dimmable lights, scenes that visibly act, energy. No network, no hub.
+- Info tab restructured: your Homey by name with owner, a Timeline of
+  recent home events (times in the car's timezone: minutes within the
+  hour, then clock time, Yesterday, date), a read-only Diagnostics
+  screen for the technical rows, notification status, and Disconnect
+  marked in red — always asking first.
+- Timeline needs companion 1.4.18 and the optional API key described on
+  its Cars tab; without it, everything else works and the Timeline stays
+  private.
+- Pairing texts are single short lines so the input stays visible above
+  the keyboard on small screens (found on a Volvo XC40).
+- Theme colour removed — hosts decide their own accents (Volvo ignores
+  it, Renault paints its own red).
+
+## 1.4.16 (27) (2026-09-02) — A demo home, and a quieter background
+
+- Built-in demo home: enter "demo" as the Homey ID and the demo code to
+  explore the full app — tiles, dimmable lights, scenes that visibly
+  act, energy — without a Homey. Built for Google Play review;
+  reviewers cannot own a hub, so the app carries its own.
 - Fixed a crash when a geofence event arrived with nothing to act on
   (double broadcast-finish); it could kill the app silently in the
   background since 1.4.14.
-- Theme accent colour (sky) for section headers and the tab indicator,
-  where the host honours it.
-- After pairing, the app opens on the Home grid.
-- Targets Android 15 (API 35), per Play's 2026 requirement.
+- After pairing, the app opens on the Home grid. Targets Android 15.
 
 ## 1.4.14 (24) (2026-08-30) — Gates, and the car that closes the door behind you
 

@@ -165,7 +165,7 @@ object DemoHome {
                 HomeyClient.Scene("f2", "Leaving home"),
             ),
             home = null,   // no geofence in the demo home
-            meta = HomeyClient.Meta("demo", "demo"),
+            meta = HomeyClient.Meta("demo", "demo", "Demo home", ""),
         )
     }
 }

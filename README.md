@@ -15,10 +15,11 @@ Renault, GM, Honda, Ford lines and others).
 **Requires the companion app on your Homey Pro:**
 [com.barradas.cardashboard](https://github.com/goncalb/com.barradas.cardashboard),
 live on the [Homey App Store](https://homey.app/a/com.barradas.cardashboard).
-The car app is on Google Play, currently internal testing — post your
-Gmail on the
+The car app is on [Google Play](https://play.google.com/store/apps/details?id=com.barradas.cardashboard)
+in closed testing — join in two clicks via the
 [community topic](https://community.homey.app/t/app-pro-car-dashboard-for-android-automotive-volvo-polestar-renault/158804)
-to be added.
+or the companion's settings page (Cars tab). No Homey yet? Enter `demo`
+as the Homey ID for a built-in demo home.
 
 **No account in the vehicle.** Pairing happens once with a short-lived
 code from the companion's settings; the car receives a per-car, revocable
@@ -132,7 +133,6 @@ CHANGELOG.md              Version history
 
 ## Roadmap
 
-- Theme accent colour for section headers and the tab indicator.
 - **Translations** — hard-coded strings move to `res/values/strings.xml`
   with `values-nl/-de/-it/-pt`; the host then follows the vehicle's
   language automatically. In step with the companion's `locales/`.
